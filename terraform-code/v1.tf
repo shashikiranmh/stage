@@ -6,14 +6,17 @@ resource "aws_instance" "dev-server" {
   ami = "ami-024e6efaf93d85776"
   instance_type = "t2.micro"
   key_name = "test"
-  vpc_security_group_ids = [ aws_security_group.dev-sg.id ]
-  subnet_id = aws_subnet.dev-sunbet01.id
+  security_groups = [ "dev-sg" ]
+  for_each = toset(["master", "slave", "Ansible" ])
+   tags = {
+     Name = "${each.key}"
+   }
 }
 
 resource "aws_security_group" "dev-sg" {
   name        = "dev-sg"
   description = "Allow SSH"
-  vpc_id = aws_vpc.dev-vpc.id
+  
 
 
   ingress {
@@ -38,59 +41,3 @@ resource "aws_security_group" "dev-sg" {
   }
 }
 
-resource "aws_vpc" "dev-vpc" {
-  
-  cidr_block = "10.1.0.0/16"
-  tags = {
-    Name = "dev-vpc"
-  }
-}
-
-resource "aws_subnet" "dev-sunbet01" {
-  vpc_id = aws_vpc.dev-vpc.id
-  cidr_block = "10.1.1.0/24"
-  map_public_ip_on_launch = "true"
-  availability_zone = "us-east-2a"
-  tags = {
-    Name = "dev-subnet01"
-  }
-}
-
-resource "aws_subnet" "dev-sunbet02" {
-  vpc_id = aws_vpc.dev-vpc.id
-  cidr_block = "10.1.2.0/24"
-  map_public_ip_on_launch = "true"
-  availability_zone = "us-east-2b"
-  tags = {
-    Name = "dev-subnet02"
-  }
-}
-
-resource "aws_internet_gateway" "dev-ig" {
-  vpc_id = aws_vpc.dev-vpc.id
-  tags = {
-    Name = "dev-ig"
-  }
-}
-
-
-resource "aws_route_table" "dev-rt" {
-  vpc_id = aws_vpc.dev-vpc.id
-  route  {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.dev-ig.id
-    
-  }
-}
-
-resource "aws_route_table_association" "dev-rta01" {
-subnet_id = aws_subnet.dev-sunbet01.id
-route_table_id = aws_route_table.dev-rt.id
-
-}
-
-resource "aws_route_table_association" "dev-rta02" {
-subnet_id = aws_subnet.dev-sunbet02.id
-route_table_id = aws_route_table.dev-rt.id
-
-}
